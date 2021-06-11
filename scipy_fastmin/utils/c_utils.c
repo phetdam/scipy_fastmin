@@ -52,7 +52,7 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
     // create string key from keep_list[i]. if NULL, error
     PyObject *key = PyUnicode_FromString(keep_list[i]);
     if (key == NULL) {
-      PyExc_SetString(
+      PyErr_SetString(
         PyExc_RuntimeError, "could not construct key from keep_list[i]"
       );
       return NULL;
@@ -63,7 +63,7 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
       // to already be in dict. exception will be raised.
       PyObject *val = PyDict_GetItemWithError(dict, key);
       if (val == NULL) {
-        PyExc_SetString(
+        PyErr_SetString(
           PyExc_RuntimeError, "key inexplicably missing from dict"
         );
         Py_DECREF(key);
@@ -72,7 +72,7 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
       }
       // else set value to new_dict as well
       if (PyDict_SetItemString(new_dict, keep_list[i], val) < 0) {
-        PyExc_SetString(
+        PyErr_SetString(
           PyExc_RuntimeError, "failed to assign value to new_dict"
         );
         Py_DECREF(key);
@@ -107,7 +107,7 @@ PyMODINIT_FUNC PyInit_solvers(void)
   // create module; if NULL, error
   PyObject *module = PyModule_Create(&mod_struct);
   if (module == NULL) {
-    PyExc_SetString(PyExc_RuntimeError, "FATAL: module creation failed");
+    PyErr_SetString(PyExc_RuntimeError, "FATAL: module creation failed");
     return NULL;
   }
   // initialize static array of void * holding the C API
