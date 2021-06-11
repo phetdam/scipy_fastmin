@@ -102,7 +102,7 @@ static PyModuleDef mod_struct = {
 };
 
 // module initialization function (external linkage)
-PyMODINIT_FUNC PyInit_solvers(void)
+PyMODINIT_FUNC PyInit_c_utils(void)
 {
   // create module; if NULL, error
   PyObject *module = PyModule_Create(&mod_struct);
