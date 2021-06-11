@@ -7,5 +7,8 @@ scipy_fastmin
 
    Repository is a work in progress and will see frequent changes.
 
-NumPy-aware multivariate minimization algorithms implemented in C extension
-modules wrappable using scipy.optimize.minimize for dense inputs.
+Multivariate optimizers implemented in C extension modules usable as custom
+minimizers for `scipy.optimize.minimize`__.
+
+.. __: https://docs.scipy.org/doc/scipy/reference/generated/
+   scipy.optimize.minimize.html
