@@ -6,6 +6,11 @@
 #define PY_SSIZE_T_CLEAN
 #include "Python.h"
 
+#include <math.h>
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include "numpy/arrayobject.h"
+
 #define C_UTILS_MODULE
 #include "c_utils.h"
 
@@ -33,7 +38,6 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
 {
   // if not a dict, error
   if (!PyDict_Check(dict)) {
-    PyErr_SetString(PyExc_TypeError, "dict must be of type dict");
     return NULL;
   }
   // if keep_list is NULL, error
@@ -52,9 +56,6 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
     // create string key from keep_list[i]. if NULL, error
     PyObject *key = PyUnicode_FromString(keep_list[i]);
     if (key == NULL) {
-      PyErr_SetString(
-        PyExc_RuntimeError, "could not construct key from keep_list[i]"
-      );
       return NULL;
     }
     // if key is in dict, set new key-value pair to new_dict
@@ -63,18 +64,12 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
       // to already be in dict. exception will be raised.
       PyObject *val = PyDict_GetItemWithError(dict, key);
       if (val == NULL) {
-        PyErr_SetString(
-          PyExc_RuntimeError, "key inexplicably missing from dict"
-        );
         Py_DECREF(key);
         Py_DECREF(new_dict);
         return NULL;
       }
       // else set value to new_dict as well
       if (PyDict_SetItemString(new_dict, keep_list[i], val) < 0) {
-        PyErr_SetString(
-          PyExc_RuntimeError, "failed to assign value to new_dict"
-        );
         Py_DECREF(key);
         Py_DECREF(new_dict);
       }
@@ -85,6 +80,49 @@ C_API_ONLY(PyFastMin_KwargsTrim)(PyObject *dict, char ** const keep_list)
   }
   // done, so return new_dict
   return new_dict;
+}
+
+/**
+ * Returns the 2-norm of an aligned C-contiguous ndarray with type NPY_DOUBLE.
+ * 
+ * If ar does not have NPY_DOUBLE typenum/is not aligned, a new array will be
+ * created. Returns -1 on error since norms cannot be negative. Note that we
+ * specify `PyObject *` instead of `PyArrayObject *` in order to avoid the
+ * annoying `NO_IMPORT_ARRAY` `PY_ARRAY_UNIQUE_SYMBOL` headaches.
+ * 
+ * @param ar `PyObject *` that is C contiguous
+ * @returns The 2-norm of `ar` as a C `double`, -1 on error.
+ */
+static double
+C_API_ONLY(PyFastMin_PyArrayNorm)(PyArrayObject *ar) {
+  // ar must be ndarray
+  if (!PyArray_Check(ar)) {
+    PyErr_SetString(PyExc_TypeError, "ar must be a numpy.ndarray");
+    return -1;
+  }
+  // if ar has type NPY_DOUBLE and is aligned, Py_INCREF it (will Py_DECREF
+  // later in function). note that we don't care about order.
+  if ((PyArray_TYPE(ar) == NPY_DOUBLE) && PyArray_ISALIGNED(ar)) {
+    Py_INCREF(ar);
+  }
+  // else drop borrowed reference and create new ndarray. order is irrelevant.
+  else {
+    ar = (PyArrayObject *) PyArray_FromArray(
+      ar, PyArray_DescrNewFromType(NPY_DOUBLE), NPY_ARRAY_CARRAY
+    );
+  }
+  // get data member
+  double *data = (double *) PyArray_DATA(ar);
+  // initial value of the norm
+  double norm = 0;
+  // compute value of the norm
+  for (npy_intp i = 0; i < PyArray_SIZE(ar); i++) {
+    norm = norm + data[i] * data[i];
+  }
+  norm = sqrt(norm);
+  // Py_DECREF ar (guaranteed to either be new or Py_INCREF'd) and return
+  Py_DECREF(ar);
+  return norm;
 }
 
 // method table
@@ -104,30 +142,28 @@ static PyModuleDef mod_struct = {
 // module initialization function (external linkage)
 PyMODINIT_FUNC PyInit_c_utils(void)
 {
+  // import_array sets error indicator and returns NULL on error automatically
+  import_array();
   // create module; if NULL, error
   PyObject *module = PyModule_Create(&mod_struct);
   if (module == NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "FATAL: module creation failed");
     return NULL;
   }
   // initialize static array of void * holding the C API
-  static void *PyFastMin_UtilsAPI[PyFastMin_UtilsAPI_Len];
-  PyFastMin_UtilsAPI[PyFastMin_KwargsTrim_NUM] = (void *) PyFastMin_KwargsTrim;
+  static void *utils_api[PyFastMin_UtilsAPI_Len];
+  utils_api[PyFastMin_KwargsTrim_NUM] = (void *) PyFastMin_KwargsTrim;
+  utils_api[PyFastMin_PyArrayNorm_NUM] = (void *) PyFastMin_PyArrayNorm;
   // create capsule holding C API void **. if NULL, error
   PyObject *api_capsule = PyCapsule_New(
-    (void *) PyFastMin_UtilsAPI, "c_utils._C_API", NULL
+    (void *) utils_api, "c_utils._C_API", NULL
   );
   if (api_capsule == NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "FATAL: capsule creation failed");
     Py_DECREF(module);
     return NULL;
   }
   // try to add capsule to module. since PyModule_AddObject steals reference
   // only on success, we need to Py_DECREF api_capsule on failure.
   if (PyModule_AddObject(module, "_C_API", api_capsule) < 0) {
-    PyErr_SetString(
-      PyExc_RuntimeError, "FATAL: could not add capsule to module"
-    );
     Py_DECREF(api_capsule);
     Py_DECREF(module);
     return NULL;
