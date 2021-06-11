@@ -1,0 +1,3 @@
+# ignore __pycache__ and [shared] object files
+**/__pycache__
+**/*.so
