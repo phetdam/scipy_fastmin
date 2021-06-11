@@ -25,7 +25,7 @@ def _get_ext_modules():
         Extension(
             name="utils.c_utils",
             sources=[f"{_PACKAGE_NAME}/utils/c_utils.c"],
-            include_dirs=[f"{_PACKAGE_NAME}/utils", get_include()],
+            include_dirs=[f"{_PACKAGE_NAME}/include", get_include()],
             extra_compile_args=_EXTRA_COMPILE_ARGS
         )
     ]
