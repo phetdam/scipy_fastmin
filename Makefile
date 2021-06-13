@@ -22,13 +22,13 @@ PYTHON        ?= python3
 # flags to pass to setup.py build
 BUILD_FLAGS    =
 # directory to save distributions to; use absolute path on docker
-DIST_FLAGS    ?= --dist-dir ./dist
-# python compiler and linker flags for use when linking python into external
-# C/C++ code; can be externally specified. gcc/g++ requires -fPIE.
-PY_CFLAGS     ?= -fPIE $(shell python3-config --cflags)
-# ubuntu needs --embed, else -lpythonx.y is omitted by --ldflags, which is a
-# linker error. libpython3.8 is in /usr/lib/x86_64-linux-gnu for me.
-PY_LDFLAGS    ?= $(shell python3-config --embed --ldflags)
+DIST_FLAGS    ?=
+# python compiler and linker flags for use when linking debug python into
+# external C/C++ code; can be externally specified. gcc/g++ requires -fPIE.
+PY_CFLAGS     ?= -fPIE $(shell python3d-config --cflags)
+# ubuntu needs --embed, else -lpythonx.yd is omitted by --ldflags, which is a
+# linker error. libpython3.8d is in /usr/lib/x86_64-linux-gnu for me.
+PY_LDFLAGS    ?= $(shell python3d-config --embed --ldflags)
 # g++ compile flags for gtest runner. my libgtest.so is in /usr/local/lib.
 GTEST_CFLAGS   = $(PY_CFLAGS) -I$(PKG_NAME)/include
 # g++ linker flags for compiling gtest runner
