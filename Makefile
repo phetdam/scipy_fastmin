@@ -11,7 +11,7 @@ CXX            = g++
 XDEPS          = \
 	$(wildcard $(PKG_NAME)/utils/*.c) $(wildcard $(PKG_NAME)/solvers/*.c) \
 	$(wildcard $(PKG_NAME)/include/*.h)
-# Python source (directories will be searched with vpath)
+# Python source dependencies
 PYDEPS         = \
 	$(wildcard $(PKG_NAME)/*.py) $(wildcard $(PKG_NAME)/utils/*.py) \
 	$(wildcard $(PKG_NAME)/solvers/*.py)
