@@ -3,6 +3,8 @@
 from numpy import get_include
 from setuptools import setup, Extension
 
+from scipy_fastmin import __version__
+
 # package name and summary/short description
 _PACKAGE_NAME = "scipy_fastmin"
 _PACKAGE_SUMMARY = """Multivariate optimizers implemented in C extension \
@@ -32,16 +34,13 @@ def _get_ext_modules():
 
 
 def _setup():
-    # get version
-    with open("VERSION") as vf:
-        version = vf.read().strip()
     # get long description from README.rst
     with open("README.rst") as rf:
         long_desc = rf.read().strip()
     # run setuptools
     setup(
         name=_PACKAGE_NAME,
-        version=version,
+        version=__version__,
         description=_PACKAGE_SUMMARY,
         long_description=long_desc,
         long_description_content_type="text/x-rst",
